@@ -1,0 +1,6 @@
+data/
+output/
+simulated_test
+run_realgraph
+benchmark.csv
+*.o

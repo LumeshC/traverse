@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traverse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,560;0,9..144,640;1,9..144,560&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #10120f;
+    --fg: #f3efe4;
+    --muted: #9a9588;
+    --line: #2c312b;
+    --acid: #d6ff4a;
+    --ink: #14160f;
+    --stage: #171a15;
+    --serif: "Fraunces", "Iowan Old Style", Palatino, "Palatino Linotype", serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font-family: var(--serif);
+    min-height: 100vh;
+    background:
+      radial-gradient(900px 480px at 100% 0%, rgba(214, 255, 74, 0.07), transparent 55%),
+      var(--bg);
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+  header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 28px 0 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+    gap: 28px;
+    align-items: end;
+    padding: 18px 0 12px;
+  }
+  h1 {
+    margin: 0;
+    font-weight: 560;
+    font-size: clamp(3.1rem, 7vw, 5.6rem);
+    line-height: 0.9;
+    letter-spacing: -0.045em;
+  }
+  h1 em { font-style: italic; color: var(--acid); font-weight: 560; }
+  .lede {
+    max-width: 38rem;
+    margin: 22px 0 0;
+    color: var(--muted);
+    font-size: 1.15rem;
+    line-height: 1.45;
+  }
+  .figure {
+    font-family: var(--mono);
+    margin-top: 28px;
+  }
+  .figure b {
+    display: block;
+    font-family: var(--serif);
+    font-weight: 640;
+    font-size: clamp(3.4rem, 8vw, 6.4rem);
+    letter-spacing: -0.05em;
+    line-height: 0.85;
+    font-variant-numeric: tabular-nums;
+  }
+  .figure span { color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .hero.shock .figure b { color: var(--acid); }
+  .field-card {
+    background: var(--stage);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    min-height: 380px;
+    position: relative;
+    overflow: hidden;
+  }
+  .field-card canvas { width: 100%; height: 380px; display: block; }
+  .field-note {
+    position: absolute;
+    left: 14px;
+    bottom: 12px;
+    right: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--muted);
+  }
+  .rules {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 22px 0 54px;
+  }
+  .rule {
+    text-align: left;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .rule[aria-pressed="true"] { border-color: var(--acid); background: #1a1e16; }
+  .rule-top, .rule-meta { font-family: var(--mono); font-size: 12px; }
+  .rule-top { display: flex; justify-content: space-between; gap: 8px; }
+  .rule-meta { color: var(--muted); line-height: 1.4; }
+  .track { display: block; height: 8px; background: #2a2e26; border-radius: 99px; overflow: hidden; }
+  .fill { display: block; height: 100%; width: 0; background: var(--acid); border-radius: 99px; }
+  .blurb { margin: -28px 0 64px; max-width: 46rem; color: var(--fg); font-size: 1.2rem; line-height: 1.45; }
+  .lab-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: baseline;
+    border-top: 1px solid var(--line);
+    padding-top: 28px;
+  }
+  .lab-head h2 { margin: 0; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.04em; font-weight: 560; }
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+  .chip, .replay {
+    font-family: var(--mono);
+    font-size: 13px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: transparent;
+    padding: 8px 12px;
+  }
+  .chip[aria-pressed="true"], .replay:hover, .rule:hover { border-color: var(--fg); }
+  .chip[aria-pressed="true"] { background: var(--acid); color: var(--ink); border-color: var(--acid); }
+  .stage-wrap {
+    background: var(--stage);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .stage-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+  }
+  #stage { width: 100%; height: 460px; display: block; cursor: crosshair; }
+  .caption { margin: 14px 2px 72px; min-height: 3.2em; font-size: 1.15rem; line-height: 1.45; max-width: 46rem; }
+  @media (max-width: 800px) {
+    .wrap { width: min(1120px, calc(100% - 28px)); }
+    .hero, .rules { grid-template-columns: 1fr; }
+    .field-card, .field-card canvas, #stage { height: 300px; min-height: 0; }
+    .field-card canvas { height: 300px; }
+    .stage-meta { flex-direction: column; align-items: flex-start; }
+    header { padding-top: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span>Traverse</span>
+      <span>C++17 · adjacency lists</span>
+    </header>
+
+    <section class="hero" id="hero">
+      <div>
+        <p class="kicker">01 — Wikipedia talk</p>
+        <h1>A <em>reply</em> decides the component.</h1>
+        <p class="lede">2,394,385 Wikipedia users. An edge is a talk-page edit, read three different ways. The same searches run on each graph.</p>
+        <div class="figure">
+          <b id="giant">2,388,953</b>
+          <span id="giant-label">people in the largest component</span>
+        </div>
+      </div>
+      <div class="field-card">
+        <canvas id="field" aria-label="Picture of how users split into a giant component and everyone else"></canvas>
+        <div class="field-note" id="field-note"></div>
+      </div>
+    </section>
+
+    <div class="rules" id="rules" role="group" aria-label="Adjacency rule"></div>
+    <p class="blurb" id="blurb"></p>
+
+    <section>
+      <div class="lab-head">
+        <div>
+          <p class="kicker">02 — The three searches</p>
+          <h2>Small graphs, visible.</h2>
+        </div>
+        <button class="replay" id="replay" type="button">Replay</button>
+      </div>
+      <div class="chips" id="families" role="group" aria-label="Graph family"></div>
+      <div class="chips" id="modes" role="group" aria-label="Algorithm"></div>
+      <div class="stage-wrap">
+        <div class="stage-meta">
+          <span id="stats"></span>
+          <span id="hint">Click a vertex to move the source</span>
+        </div>
+        <canvas id="stage" aria-label="Animated graph search"></canvas>
+      </div>
+      <p class="caption" id="caption"></p>
+    </section>
+  </div>
+<script>
+const USERS = 2394385;
+const RULES = [
+  {
+    id: "any",
+    name: "Any edit",
+    largest: 2388953,
+    components: 2555,
+    edges: 4659565,
+    core: 2388953 / USERS,
+    tight: false,
+    blurb: "Keep a tie if either person wrote on the other’s talk page. Almost everyone shares one component. From user 0 the farthest recorded path is 7 hops, and the first cycle is a triangle.",
+    note: "Bright dots are the giant component. A few specks are the other 5,432 users."
+  },
+  {
+    id: "reciprocal",
+    name: "Both replied",
+    largest: 92117,
+    components: 2301204,
+    edges: 361845,
+    core: 92117 / USERS,
+    tight: true,
+    blurb: "Keep a tie only when each person wrote on the other’s page. The giant falls to 92,117. The other 2.3 million components are people with no mutual reply.",
+    note: "The bright core is 92,117 users. Everything else is someone left out of a conversation."
+  },
+  {
+    id: "oneway",
+    name: "One direction",
+    largest: 2370807,
+    components: 20339,
+    edges: 4297720,
+    core: 2370807 / USERS,
+    tight: false,
+    blurb: "Drop the mutual pairs and keep the one-way edits. The giant barely moves, to 2,370,807. Unanswered messages are what hold this network together.",
+    note: "Remove every two-way conversation and the mass of the network stays put."
+  }
+];
+
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const fmt = (n) => n.toLocaleString("en-US");
+
+const field = document.getElementById("field");
+const fctx = field.getContext("2d");
+const hero = document.getElementById("hero");
+const giantEl = document.getElementById("giant");
+const blurbEl = document.getElementById("blurb");
+const noteEl = document.getElementById("field-note");
+const rulesEl = document.getElementById("rules");
+
+const dots = Array.from({ length: 420 }, (_, i) => ({
+  rank: i / 420,
+  x: Math.random(),
+  y: Math.random(),
+  tx: 0.5,
+  ty: 0.5,
+  ang: Math.random() * Math.PI * 2,
+  rad: Math.sqrt(Math.random()),
+  dustAng: Math.random() * Math.PI * 2,
+  dustRad: Math.random(),
+  core: true
+}));
+
+let ruleId = "any";
+let shown = RULES[0].largest;
+let tweenGen = 0;
+let userPicked = false;
+
+function fit(canvas) {
+  const r = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  if (canvas.width !== Math.floor(w * r) || canvas.height !== Math.floor(h * r)) {
+    canvas.width = Math.floor(w * r);
+    canvas.height = Math.floor(h * r);
+  }
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(r, 0, 0, r, 0, 0);
+  return { ctx, w, h };
+}
+
+function retarget(rule) {
+  for (const d of dots) {
+    const inCore = d.rank < rule.core;
+    d.core = inCore;
+    if (inCore) {
+      const spread = rule.tight ? 0.11 : 0.36;
+      const rad = spread * (0.25 + 0.75 * d.rad);
+      d.tx = 0.5 + Math.cos(d.ang) * rad;
+      d.ty = 0.48 + Math.sin(d.ang) * rad * 0.86;
+    } else {
+      const rad = rule.tight ? 0.22 + d.dustRad * 0.28 : 0.4 + d.dustRad * 0.08;
+      d.tx = 0.5 + Math.cos(d.dustAng) * rad;
+      d.ty = 0.48 + Math.sin(d.dustAng) * rad * 0.86;
+    }
+  }
+}
+
+function drawField() {
+  const { ctx, w, h } = fit(field);
+  ctx.clearRect(0, 0, w, h);
+  for (const d of dots) {
+    const x = d.x * w;
+    const y = d.y * h;
+    ctx.beginPath();
+    if (d.core) {
+      ctx.fillStyle = "#d6ff4a";
+      ctx.arc(x, y, ruleId === "reciprocal" ? 3.2 : 2.4, 0, Math.PI * 2);
+    } else {
+      ctx.fillStyle = "rgba(243,239,228,0.28)";
+      ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  }
+}
+
+function stepField() {
+  const k = reduce ? 1 : 0.08;
+  for (const d of dots) {
+    d.x += (d.tx - d.x) * k;
+    d.y += (d.ty - d.y) * k;
+  }
+  drawField();
+  requestAnimationFrame(stepField);
+}
+
+function renderRules() {
+  rulesEl.innerHTML = "";
+  for (const rule of RULES) {
+    const pct = (100 * rule.largest / USERS).toFixed(1);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "rule";
+    btn.dataset.rule = rule.id;
+    btn.setAttribute("aria-pressed", String(rule.id === ruleId));
+    btn.innerHTML =
+      `<span class="rule-top"><span>${rule.name}</span><span>${pct}%</span></span>` +
+      `<span class="track"><span class="fill"></span></span>` +
+      `<span class="rule-meta">${fmt(rule.largest)} in the largest of ${fmt(rule.components)} components</span>`;
+    btn.addEventListener("click", () => selectRule(rule.id, true));
+    rulesEl.appendChild(btn);
+    requestAnimationFrame(() => {
+      btn.querySelector(".fill").style.width = pct + "%";
+    });
+  }
+}
+
+function selectRule(id, fromUser) {
+  if (fromUser) userPicked = true;
+  const rule = RULES.find((r) => r.id === id);
+  const prev = shown;
+  ruleId = id;
+  hero.classList.toggle("shock", id === "reciprocal");
+  blurbEl.textContent = rule.blurb;
+  noteEl.textContent = rule.note;
+  for (const btn of rulesEl.querySelectorAll(".rule")) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.rule === id));
+  }
+  retarget(rule);
+  const gen = ++tweenGen;
+  const target = rule.largest;
+  if (reduce) {
+    shown = target;
+    giantEl.textContent = fmt(shown);
+    return;
+  }
+  const t0 = performance.now();
+  const dur = 700;
+  function tick(now) {
+    if (gen !== tweenGen) return;
+    const p = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3);
+    shown = Math.round(prev + (target - prev) * e);
+    giantEl.textContent = fmt(shown);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function undirected(n, pairs, labels) {
+  const vertices = labels || Array.from({ length: n }, (_, i) => i);
+  const adj = new Map(vertices.map((v) => [v, []]));
+  const edges = [];
+  const seen = new Set();
+  for (const [a, b] of pairs) {
+    if (a === b || !adj.has(a) || !adj.has(b)) continue;
+    const u = Math.min(a, b);
+    const v = Math.max(a, b);
+    const k = u + ":" + v;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    adj.get(u).push(v);
+    adj.get(v).push(u);
+    edges.push([u, v]);
+  }
+  for (const list of adj.values()) list.sort((a, b) => a - b);
+  return { vertices, adj, edges };
+}
+
+const FAMILIES = [
+  { id: "cycle", name: "Cycle", blurb: "One loop. Shortest paths are at most half way around.",
+    build: () => undirected(14, Array.from({ length: 14 }, (_, i) => [i, (i + 1) % 14])) },
+  { id: "complete", name: "Complete", blurb: "Every pair is an edge. The search stops at the first triangle.",
+    build: () => {
+      const pairs = [];
+      for (let u = 0; u < 7; u++) for (let v = u + 1; v < 7; v++) pairs.push([u, v]);
+      return undirected(7, pairs);
+    } },
+  { id: "empty", name: "Empty", blurb: "No edges. Every vertex is its own component.",
+    build: () => undirected(12, []) },
+  { id: "heap", name: "Heap", blurb: "Parent of v is (v − 1) / 2. A tree, so the cycle search comes back empty.",
+    build: () => undirected(15, Array.from({ length: 14 }, (_, i) => [i + 1, Math.floor(i / 2)])) },
+  { id: "truncated", name: "Truncated heap", blurb: "Labels stay m…n−1. Four roots, four components.",
+    build: () => {
+      const m = 3, n = 15;
+      const labels = [];
+      const pairs = [];
+      for (let v = m; v < n; v++) {
+        labels.push(v);
+        const p = Math.floor((v - 1) / 2);
+        if (p >= m) pairs.push([v, p]);
+      }
+      return undirected(0, pairs, labels);
+    } },
+  { id: "modk", name: "Residues mod 3", blurb: "Three cliques. There is no path between different residues.",
+    build: () => {
+      const pairs = [];
+      const groups = [[], [], []];
+      for (let v = 0; v < 12; v++) groups[v % 3].push(v);
+      for (const g of groups) for (let i = 0; i < g.length; i++) for (let j = i + 1; j < g.length; j++) pairs.push([g[i], g[j]]);
+      return undirected(12, pairs);
+    } }
+];
+
+const MODES = [
+  { id: "components", name: "Components" },
+  { id: "cycle", name: "One cycle" },
+  { id: "paths", name: "Shortest paths" }
+];
+
+const PALETTE = ["#d6ff4a", "#8ef0c8", "#79b8ff", "#ffb45a", "#ff8f70", "#d7b0ff", "#f3efe4", "#ffd0a8", "#9ad7ff", "#e7ff8a", "#ffd36b", "#c9d2c2"];
+
+let familyId = "cycle";
+let modeId = "components";
+let source = 0;
+let graph = null;
+let positions = new Map();
+let nodeStyle = new Map();
+let edgeStyle = new Map();
+let playTimer = 0;
+let frameGen = 0;
+
+const stage = document.getElementById("stage");
+const sctx = stage.getContext("2d");
+const familiesEl = document.getElementById("families");
+const modesEl = document.getElementById("modes");
+const statsEl = document.getElementById("stats");
+const captionEl = document.getElementById("caption");
+const hintEl = document.getElementById("hint");
+
+function edgeKey(u, v) { return (u < v ? u : v) + ":" + (u < v ? v : u); }
+
+function layout(g, id) {
+  const pos = new Map();
+  if (id === "heap" || id === "truncated") {
+    const slot = (v) => {
+      const L = Math.floor(Math.log2(v + 1));
+      const index = v - (2 ** L - 1);
+      return { L, x: (index + 0.5) / 2 ** L };
+    };
+    const levels = [...new Set(g.vertices.map((v) => slot(v).L))].sort((a, b) => a - b);
+    for (const v of g.vertices) {
+      const s = slot(v);
+      const row = levels.indexOf(s.L);
+      pos.set(v, { x: s.x, y: (row + 1) / (levels.length + 1) });
+    }
+    return pos;
+  }
+  if (id === "empty") {
+    const cols = Math.ceil(Math.sqrt(g.vertices.length));
+    g.vertices.forEach((v, i) => {
+      const c = i % cols;
+      const r = Math.floor(i / cols);
+      const rows = Math.ceil(g.vertices.length / cols);
+      pos.set(v, { x: (c + 1) / (cols + 1), y: (r + 1) / (rows + 1) });
+    });
+    return pos;
+  }
+  if (id === "modk") {
+    const groups = [[], [], []];
+    for (const v of g.vertices) groups[v % 3].push(v);
+    groups.forEach((members, gi) => {
+      const a = -Math.PI / 2 + (gi / groups.length) * Math.PI * 2;
+      const cx = 0.5 + Math.cos(a) * 0.28;
+      const cy = 0.5 + Math.sin(a) * 0.28;
+      members.forEach((v, i) => {
+        const b = -Math.PI / 2 + (i / members.length) * Math.PI * 2;
+        pos.set(v, { x: cx + Math.cos(b) * 0.1, y: cy + Math.sin(b) * 0.1 });
+      });
+    });
+    return pos;
+  }
+  g.vertices.forEach((v, i) => {
+    const a = -Math.PI / 2 + (i / g.vertices.length) * Math.PI * 2;
+    pos.set(v, { x: 0.5 + Math.cos(a) * 0.36, y: 0.5 + Math.sin(a) * 0.36 });
+  });
+  return pos;
+}
+
+function resetStyles() {
+  nodeStyle = new Map(graph.vertices.map((v) => [v, { fill: "#242820", text: "#f3efe4", ring: "#3a4036" }]));
+  edgeStyle = new Map(graph.edges.map(([u, v]) => [edgeKey(u, v), { stroke: "rgba(243,239,228,0.28)", width: 1.4 }]));
+}
+
+function drawStage() {
+  const { ctx, w, h } = fit(stage);
+  ctx.clearRect(0, 0, w, h);
+  const pt = (v) => {
+    const p = positions.get(v);
+    return { x: 36 + p.x * (w - 72), y: 32 + p.y * (h - 64) };
+  };
+  for (const [u, v] of graph.edges) {
+    const st = edgeStyle.get(edgeKey(u, v));
+    const a = pt(u);
+    const b = pt(v);
+    ctx.beginPath();
+    ctx.strokeStyle = st.stroke;
+    ctx.lineWidth = st.width;
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+  ctx.font = "12px IBM Plex Mono, ui-monospace, monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const v of graph.vertices) {
+    const p = pt(v);
+    const st = nodeStyle.get(v);
+    ctx.beginPath();
+    ctx.fillStyle = st.fill;
+    ctx.strokeStyle = st.ring;
+    ctx.lineWidth = 2;
+    ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = st.text;
+    ctx.fillText(String(v), p.x, p.y + 0.5);
+  }
+  stage._pt = pt;
+}
+
+function componentsFrames(g) {
+  const seen = new Set();
+  const frames = [];
+  let comp = 0;
+  function visit(start) {
+    const stack = [start];
+    const parent = new Map([[start, -1]]);
+    seen.add(start);
+    frames.push({ kind: "node", v: start, fill: PALETTE[comp % PALETTE.length], text: "#14160f", say: `Component ${comp + 1} starts at ${start}.` });
+    while (stack.length) {
+      const u = stack.pop();
+      for (const w of g.adj.get(u)) {
+        if (seen.has(w)) continue;
+        seen.add(w);
+        parent.set(w, u);
+        stack.push(w);
+        frames.push({
+          kind: "span", u, w,
+          fill: PALETTE[comp % PALETTE.length],
+          say: `Depth-first search steps ${u} → ${w}. Still component ${comp + 1}.`
+        });
+      }
+    }
+  }
+  for (const v of g.vertices) {
+    if (!seen.has(v)) {
+      visit(v);
+      comp++;
+    }
+  }
+  frames.push({ kind: "say", say: comp === 1 ? "One component. Every vertex was reached from the first." : `${comp} components. The search restarts on each untouched vertex.` });
+  return frames;
+}
+
+function cycleFrames(g) {
+  const WHITE = 0, GRAY = 1, BLACK = 2;
+  const color = new Map(g.vertices.map((v) => [v, WHITE]));
+  const parent = new Map();
+  const frames = [];
+  function walk(start) {
+    const stack = [{ v: start, i: 0 }];
+    parent.set(start, -1);
+    color.set(start, GRAY);
+    frames.push({ kind: "node", v: start, fill: "#3a3420", text: "#d6ff4a", ring: "#d6ff4a", say: `Enter ${start}. Gray means it is still on the search stack.` });
+    while (stack.length) {
+      const top = stack[stack.length - 1];
+      const nbrs = g.adj.get(top.v);
+      if (top.i >= nbrs.length) {
+        color.set(top.v, BLACK);
+        stack.pop();
+        frames.push({ kind: "node", v: top.v, fill: "#2a2e28", text: "#9a9588", ring: "#3a4036", say: `Leave ${top.v}. Its subtree has no back edge.` });
+        continue;
+      }
+      const w = nbrs[top.i++];
+      if (w === parent.get(top.v)) continue;
+      if (color.get(w) === GRAY) {
+        const cyc = [w];
+        let x = top.v;
+        while (x !== w) { cyc.push(x); x = parent.get(x); }
+        cyc.push(w);
+        cyc.reverse();
+        frames.push({ kind: "cycle", cyc, say: `Back edge ${top.v}–${w} closes a cycle of length ${cyc.length - 1}. The search stops here.` });
+        return true;
+      }
+      if (color.get(w) === WHITE) {
+        parent.set(w, top.v);
+        color.set(w, GRAY);
+        stack.push({ v: w, i: 0 });
+        frames.push({ kind: "span", u: top.v, w, fill: "#3a3420", text: "#d6ff4a", ring: "#d6ff4a", say: `Tree edge ${top.v} → ${w}.` });
+      }
+    }
+    return false;
+  }
+  for (const v of g.vertices) {
+    if (color.get(v) === WHITE && walk(v)) return frames;
+  }
+  frames.push({ kind: "say", say: "No back edge to a gray ancestor. This graph has no cycle." });
+  return frames;
+}
+
+function pathFrames(g, src) {
+  const dist = new Map([[src, 0]]);
+  const parent = new Map([[src, -1]]);
+  const q = [src];
+  const frames = [{ kind: "node", v: src, fill: "#d6ff4a", text: "#14160f", ring: "#d6ff4a", say: `Source ${src}. Its path is just itself.` }];
+  let qi = 0;
+  while (qi < q.length) {
+    const u = q[qi++];
+    for (const w of g.adj.get(u)) {
+      if (dist.has(w)) continue;
+      dist.set(w, dist.get(u) + 1);
+      parent.set(w, u);
+      q.push(w);
+      const hop = dist.get(w);
+      const tint = hop === 1 ? "#b6f4c8" : hop === 2 ? "#8ef0c8" : "#5fd0b0";
+      frames.push({ kind: "span", u, w, fill: tint, text: "#14160f", ring: "#8ef0c8", say: `Hop ${hop}. ${w} is first reached from ${u}.` });
+    }
+  }
+  let far = src;
+  for (const [v, d] of dist) if (d > dist.get(far)) far = v;
+  const path = [];
+  for (let x = far; x !== -1; x = parent.get(x)) path.push(x);
+  path.reverse();
+  const hops = dist.get(far);
+  const missed = g.vertices.length - dist.size;
+  const tail = missed ? ` ${missed} ${missed === 1 ? "vertex stays" : "vertices stay"} dark: no path from ${src}.` : "";
+  frames.push({
+    kind: "path",
+    path,
+    say: hops === 0 ? `Only ${src} is reachable.${tail}` : `One shortest path, ${hops} ${hops === 1 ? "hop" : "hops"}, from ${path[0]} to ${far}.${tail}`
+  });
+  return frames;
+}
+
+function applyFrame(frame) {
+  captionEl.textContent = frame.say || "";
+  if (frame.kind === "node") {
+    nodeStyle.set(frame.v, { fill: frame.fill, text: frame.text || "#f3efe4", ring: frame.ring || frame.fill });
+  } else if (frame.kind === "span") {
+    edgeStyle.set(edgeKey(frame.u, frame.w), { stroke: "rgba(214,255,74,0.85)", width: 2.4 });
+    nodeStyle.set(frame.w, { fill: frame.fill, text: frame.text || "#14160f", ring: frame.ring || frame.fill });
+  } else if (frame.kind === "cycle") {
+    const cyc = frame.cyc;
+    for (let i = 0; i < cyc.length - 1; i++) {
+      edgeStyle.set(edgeKey(cyc[i], cyc[i + 1]), { stroke: "#ff6b4a", width: 3.2 });
+      nodeStyle.set(cyc[i], { fill: "#ff6b4a", text: "#14160f", ring: "#ffd0c4" });
+    }
+  } else if (frame.kind === "path") {
+    const path = frame.path;
+    for (let i = 0; i < path.length - 1; i++) {
+      edgeStyle.set(edgeKey(path[i], path[i + 1]), { stroke: "#d6ff4a", width: 3.4 });
+    }
+    nodeStyle.set(path[0], { fill: "#d6ff4a", text: "#14160f", ring: "#d6ff4a" });
+    if (path.length > 1) nodeStyle.set(path[path.length - 1], { fill: "#f3efe4", text: "#14160f", ring: "#d6ff4a" });
+  }
+}
+
+function componentCount(g) {
+  const seen = new Set();
+  let n = 0;
+  for (const start of g.vertices) {
+    if (seen.has(start)) continue;
+    n++;
+    const stack = [start];
+    seen.add(start);
+    while (stack.length) {
+      const u = stack.pop();
+      for (const w of g.adj.get(u)) if (!seen.has(w)) { seen.add(w); stack.push(w); }
+    }
+  }
+  return n;
+}
+
+function summarize() {
+  const comps = componentCount(graph);
+  const frames = cycleFrames(graph);
+  const last = frames[frames.length - 1];
+  const cycle = last.kind === "cycle" ? last.cyc.length - 1 : 0;
+  statsEl.textContent = `${graph.vertices.length} vertices · ${graph.edges.length} edges · ${comps} ${comps === 1 ? "component" : "components"} · cycle ${cycle || "none"}`;
+}
+
+function framesFor() {
+  if (modeId === "components") return componentsFrames(graph);
+  if (modeId === "cycle") return cycleFrames(graph);
+  return pathFrames(graph, source);
+}
+
+function play() {
+  clearTimeout(playTimer);
+  const gen = ++frameGen;
+  resetStyles();
+  drawStage();
+  const frames = framesFor();
+  const fam = FAMILIES.find((f) => f.id === familyId);
+  captionEl.textContent = fam.blurb;
+  hintEl.textContent = modeId === "paths" ? "Click a vertex to move the source" : "The search runs on its own";
+  if (reduce) {
+    for (const frame of frames) applyFrame(frame);
+    drawStage();
+    return;
+  }
+  let i = 0;
+  const step = () => {
+    if (gen !== frameGen) return;
+    if (i >= frames.length) return;
+    applyFrame(frames[i++]);
+    drawStage();
+    playTimer = setTimeout(step, 140);
+  };
+  playTimer = setTimeout(step, 360);
+}
+
+function loadFamily(id) {
+  familyId = id;
+  graph = FAMILIES.find((f) => f.id === id).build();
+  positions = layout(graph, id);
+  source = graph.vertices[0];
+  for (const btn of familiesEl.querySelectorAll(".chip")) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.id === id));
+  }
+  summarize();
+  play();
+}
+
+function setMode(id) {
+  modeId = id;
+  for (const btn of modesEl.querySelectorAll(".chip")) {
+    btn.setAttribute("aria-pressed", String(btn.dataset.id === id));
+  }
+  play();
+}
+
+FAMILIES.forEach((f) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "chip";
+  b.dataset.id = f.id;
+  b.textContent = f.name;
+  b.setAttribute("aria-pressed", "false");
+  b.addEventListener("click", () => loadFamily(f.id));
+  familiesEl.appendChild(b);
+});
+MODES.forEach((m) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "chip";
+  b.dataset.id = m.id;
+  b.textContent = m.name;
+  b.setAttribute("aria-pressed", String(m.id === modeId));
+  b.addEventListener("click", () => setMode(m.id));
+  modesEl.appendChild(b);
+});
+document.getElementById("replay").addEventListener("click", play);
+
+stage.addEventListener("click", (event) => {
+  if (!stage._pt) return;
+  const rect = stage.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  let best = null;
+  let bestD = 26 * 26;
+  for (const v of graph.vertices) {
+    const p = stage._pt(v);
+    const dx = p.x - x;
+    const dy = p.y - y;
+    const d = dx * dx + dy * dy;
+    if (d < bestD) { bestD = d; best = v; }
+  }
+  if (best == null) return;
+  source = best;
+  if (modeId !== "paths") setMode("paths");
+  else play();
+});
+
+window.addEventListener("resize", () => { drawField(); drawStage(); });
+
+renderRules();
+selectRule("any", false);
+requestAnimationFrame(stepField);
+loadFamily("cycle");
+
+if (!reduce) {
+  setTimeout(() => {
+    if (!userPicked) selectRule("reciprocal", false);
+  }, 1100);
+}
+</script>
+</body>
+</html>
